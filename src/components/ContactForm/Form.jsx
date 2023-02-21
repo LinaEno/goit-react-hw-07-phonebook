@@ -19,6 +19,7 @@ export default function Form() {
       setNumber(value);
     }
   };
+  //
 
   const handleSubmit = e => {
     e.preventDefault();
