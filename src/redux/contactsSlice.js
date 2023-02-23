@@ -1,4 +1,4 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, isAnyOf } from '@reduxjs/toolkit';
 import { fetchContacts, addContact, deleteContact } from './operations';
 
 const initialState = {
@@ -10,9 +10,19 @@ const initialState = {
   filter: '',
 };
 
+const extraActions = [fetchContacts, addContact, deleteContact];
+
+const getActions = type => extraActions.map(action => action[type]);
+
 const handlePending = state => {
   state.contacts.isLoading = true;
 };
+
+const handleFulfilled = state => {
+  state.contacts.isLoading = false;
+  state.contacts.error = null;
+};
+
 const handleRejected = (state, { payload }) => {
   state.contacts.isLoading = false;
   state.contacts.error = payload;
@@ -30,31 +40,24 @@ const contactsSlice = createSlice({
 
   extraReducers: builder =>
     builder
-      .addCase(fetchContacts.pending, handlePending)
+
       .addCase(fetchContacts.fulfilled, (state, { payload }) => {
-        state.contacts.isLoading = false;
-        state.contacts.error = null;
         state.contacts.items = payload;
       })
-      .addCase(fetchContacts.rejected, handleRejected)
 
-      .addCase(addContact.pending, handlePending)
       .addCase(addContact.fulfilled, (state, { payload }) => {
-        state.contacts.isLoading = false;
-        state.contacts.error = null;
         state.contacts.items = [payload, ...state.contacts.items];
       })
-      .addCase(addContact.rejected, handleRejected)
 
-      .addCase(deleteContact.pending, handlePending)
       .addCase(deleteContact.fulfilled, (state, { payload }) => {
-        state.contacts.isLoading = false;
-        state.contacts.error = null;
         state.contacts.items = state.contacts.items.filter(
           item => item.id !== payload
         );
       })
-      .addCase(deleteContact.rejected, handleRejected),
+
+      .addMatcher(isAnyOf(...getActions('pending')), handlePending)
+      .addMatcher(isAnyOf(...getActions('fulfilled')), handleFulfilled)
+      .addMatcher(isAnyOf(...getActions('rejected')), handleRejected),
 });
 
 export const { setFilter } = contactsSlice.actions;
